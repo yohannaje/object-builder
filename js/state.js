@@ -10,7 +10,7 @@
   /** mm → texto cm sin ceros sobrantes */
   App.cm = (mm) => String(+(mm / 10).toFixed(2)).replace('.', ',');
 
-  const S = (type, o = {}) => ({ id: App.uid(), type, name: '', height: 0, shape: 'straight', delta: 0, bottomD: 80, ...o });
+  const S = (type, o = {}) => ({ id: App.uid(), type, name: '', height: 0, bottomD: 80, ...o });
   const H = (o = {}) => ({ id: App.uid(), length: 95, width: 18, count: 1, attach: 45, ...o });
   App.S = S; App.H = H;
 
@@ -18,21 +18,21 @@
   App.EXAMPLES = {
     vasija: () => ({ ...base, title: 'Vasija con hombro', baseDiameter: 70, handles: [], sections: [
       S('foot', { bottomD: 55, height: 10 }), S('base'),
-      S('body', { shape: 'out', delta: 60, height: 45 }), S('body', { shape: 'in', delta: 70, height: 30 }),
-      S('neck', { shape: 'straight', height: 10 }), S('neck', { shape: 'out', delta: 30, height: 9 }),
+      S('body', { topD: 130, height: 45 }), S('body', { topD: 60, height: 30 }),
+      S('neck', { topD: 60, height: 10 }), S('neck', { topD: 90, height: 9 }),
     ] }),
     taza: () => ({ ...base, title: 'Taza recta', baseDiameter: 80, handles: [H({ attach: 50 })], sections: [
-      S('base'), S('body', { shape: 'straight', height: 90 }),
+      S('base'), S('body', { topD: 80, height: 90 }),
     ] }),
     conica: () => ({ ...base, title: 'Taza cónica', baseDiameter: 65, handles: [H({ length: 90, width: 16, attach: 48 })], sections: [
-      S('base'), S('body', { shape: 'out', delta: 25, height: 85 }),
+      S('base'), S('body', { topD: 90, height: 85 }),
     ] }),
     espresso: () => ({ ...base, title: 'Pocillo con pie', baseDiameter: 60, handles: [], sections: [
-      S('foot', { bottomD: 45, height: 8 }), S('base'), S('body', { shape: 'out', delta: 15, height: 55 }),
+      S('foot', { bottomD: 45, height: 8 }), S('base'), S('body', { topD: 75, height: 55 }),
     ] }),
     botella: () => ({ ...base, title: 'Botella', baseDiameter: 75, handles: [], sections: [
-      S('base'), S('body', { shape: 'straight', height: 90 }), S('body', { shape: 'in', delta: 45, height: 40 }),
-      S('neck', { shape: 'straight', height: 45 }),
+      S('base'), S('body', { topD: 75, height: 90 }), S('body', { topD: 30, height: 40 }),
+      S('neck', { topD: 30, height: 45 }),
     ] }),
   };
   App.EXAMPLE_NAMES = { vasija: 'Vasija con hombro', taza: 'Taza recta', conica: 'Taza cónica', espresso: 'Pocillo con pie', botella: 'Botella' };
@@ -41,9 +41,28 @@
   App.normalize = (d) => {
     const out = { ...base, title: 'Sin nombre', baseDiameter: 80, handles: [], sections: [], ...d };
     out.sections = (out.sections || []).map((s) => S(s.type || 'body', { ...s, id: s.id || App.uid() }));
+    migrateTopD(out);
     out.handles = (out.handles || []).map((h) => H({ ...h, id: h.id || App.uid() }));
     return out;
   };
+
+  /**
+   * Diseños guardados antes guardaban forma + diferencia de ⌀ (shape/delta) en vez del
+   * ⌀ de arriba. Se convierten una vez con la regla vieja, así se ven igual que antes.
+   */
+  function migrateTopD(d) {
+    let prev = null;
+    d.sections.forEach((s) => {
+      if (s.type === 'base') { prev = d.baseDiameter; return; }
+      const bottom = s.type !== 'foot' && prev != null ? prev : s.bottomD;
+      if (s.topD == null) {
+        const dl = Math.abs(s.delta || 0);
+        s.topD = s.type === 'foot' ? bottom : s.shape === 'out' ? bottom + dl : s.shape === 'in' ? Math.max(0, bottom - dl) : bottom;
+      }
+      delete s.shape; delete s.delta;
+      prev = s.topD;
+    });
+  }
 
   function loadStored() {
     try {
@@ -134,10 +153,11 @@
     const [type, shape] = key.split('-');
     if (type === 'foot') return S('foot', { bottomD: Math.round(st.baseDiameter * 0.75), height: 10 });
     if (type === 'base') return S('base');
-    const delta = shape === 'straight' ? 0 : type === 'neck' ? 15 : 20;
+    const step = shape === 'straight' ? 0 : type === 'neck' ? 15 : 20;
     const resolved = App.resolved();
     const top = resolved.length ? resolved[resolved.length - 1].topD : st.baseDiameter;
-    return S(type, { shape, delta, height: type === 'neck' ? 20 : 50, bottomD: top });
+    const topD = shape === 'out' ? top + step : shape === 'in' ? Math.max(10, top - step) : top;
+    return S(type, { topD, height: type === 'neck' ? 20 : 50, bottomD: top });
   };
 
   /** Inserta una sección nueva; index = posición en el arreglo (0 = apoyo). */
@@ -172,7 +192,9 @@
   App.duplicateSection = (id) => App.commit((st) => {
     const i = App.findIndex(id);
     if (i < 0 || st.sections[i].type === 'base') return;
-    const copy = { ...st.sections[i], id: App.uid(), name: '' };
+    // la copia sigue la misma inclinación desde donde termina la original
+    const r = App.resolved()[i];
+    const copy = { ...st.sections[i], id: App.uid(), name: '', topD: Math.max(0, r.topD + (r.topD - r.bottomD)) };
     st.sections.splice(i + 1, 0, copy);
     App.selected = copy.id;
   });

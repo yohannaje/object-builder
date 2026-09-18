@@ -206,7 +206,11 @@
         ? h('span', { class: 'seg', role: 'group', 'aria-label': 'Forma' }, ...SHAPES.map(([k]) =>
             h('button', { class: s.shape === k ? 'on' : '', 'aria-pressed': s.shape === k ? 'true' : 'false',
               title: SHAPE_TITLES[k], 'aria-label': SHAPE_TITLES[k], html: shapeIcon(k),
-              onclick: () => App.commit((x) => { const r = x.sections[App.findIndex(s.id)]; r.shape = k; if (k !== 'straight' && !r.delta) r.delta = 20; }) })))
+              onclick: () => App.commit((x) => {
+                // al elegir la forma se mueve solo el ⌀ de arriba de esta sección (2 cm si estaba recta)
+                const d = Math.max(Math.abs(s.topD - s.bottomD), 20);
+                x.sections[App.findIndex(s.id)].topD = k === 'straight' ? s.bottomD : k === 'out' ? s.bottomD + d : Math.max(0, s.bottomD - d);
+              }) })))
         : null,
       h('span', { class: 'icon-btns' },
         isWall ? h('button', { class: 'ib', title: 'Duplicar', 'aria-label': 'Duplicar', onclick: () => App.duplicateSection(s.id) }, ph('copy')) : null,
@@ -224,19 +228,12 @@
         numField('⌀ pie', s.bottomD, 'cm', upd((r, v) => { r.bottomD = v * 10; }), { fkey: `${s.id}:bd`, format: cmFmt, min: 0.1 }),
         numField('altura', s.height, 'cm', upd((r, v) => { r.height = v * 10; }), { fkey: `${s.id}:h`, format: cmFmt, min: 0 }),
       );
-      const next = secs[i + 1];
-      if (next && next.type === 'base' && s.topD >= st.baseDiameter) warns.push('El pie debería ser más angosto que la base.');
     } else {
       fields.append(
         numField('altura', s.height, 'cm', upd((r, v) => { r.height = v * 10; }), { fkey: `${s.id}:h`, format: cmFmt, min: 0 }),
         numField('⌀ abajo', s.bottomD, 'cm', upd((r, v) => { r.bottomD = v * 10; }),
           { fkey: `${s.id}:bd`, format: cmFmt, min: 0, readonly: !!prev }),
-        numField('⌀ arriba', s.topD, 'cm', upd((r, v, x) => {
-          const bottom = App.resolved()[App.findIndex(s.id)].bottomD;
-          const top = v * 10;
-          r.delta = Math.abs(top - bottom);
-          r.shape = r.delta < 0.05 ? 'straight' : top > bottom ? 'out' : 'in';
-        }), { fkey: `${s.id}:td`, format: cmFmt, min: 0 }),
+        numField('⌀ arriba', s.topD, 'cm', upd((r, v) => { r.topD = v * 10; }), { fkey: `${s.id}:td`, format: cmFmt, min: 0 }),
       );
       if (s.height > 0) {
         // geometría de la plantilla (en crudo), que es lo que se corta

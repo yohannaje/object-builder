@@ -100,9 +100,9 @@
       }
       // cada pared arranca donde termina la de abajo; el pie (o la primera pared) tiene su propio ⌀
       const bottomD = s.type !== 'foot' && prevTop != null ? prevTop : s.bottomD;
-      const delta = Math.abs(s.delta || 0);
-      const shape = s.type === 'foot' ? 'straight' : s.shape;
-      const topD = shape === 'out' ? bottomD + delta : shape === 'in' ? Math.max(0, bottomD - delta) : bottomD;
+      // el ⌀ de arriba es propio de cada sección: cambiar otra sección no lo mueve
+      const topD = s.type === 'foot' || s.topD == null ? bottomD : Math.max(0, s.topD);
+      const shape = Math.abs(topD - bottomD) < 0.05 ? 'straight' : topD > bottomD ? 'out' : 'in';
       prevTop = topD;
       return { ...s, shape, bottomD, topD };
     });
@@ -200,7 +200,7 @@
     return {
       ...d,
       baseDiameter: d.baseDiameter * k,
-      sections: d.sections.map((s) => ({ ...s, bottomD: (s.bottomD || 0) * k, delta: (s.delta || 0) * k, height: (s.height || 0) * k })),
+      sections: d.sections.map((s) => ({ ...s, bottomD: (s.bottomD || 0) * k, topD: s.topD == null ? s.topD : s.topD * k, height: (s.height || 0) * k })),
       handles: (d.handles || []).map((h) => ({ ...h, length: h.length * k, width: h.width * k, attach: (h.attach || 0) * k })),
     };
   }
