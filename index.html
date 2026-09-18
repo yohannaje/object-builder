@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Object Builder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/regular/style.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="top">
+    <h1 class="brand"><em>Object Builder</em></h1>
+    <input id="title" class="title-input" aria-label="Nombre de la pieza" placeholder="Nombre de la pieza" spellcheck="false">
+    <div class="top-actions">
+      <div class="menu">
+        <button id="btn-settings" class="icon-btn wide" data-menu="settings-pop" title="Medidas generales" aria-label="Medidas generales" aria-haspopup="dialog" aria-expanded="false">
+          <i class="ph ph-sliders-horizontal"></i><span>Medidas</span><i class="ph ph-caret-down caret"></i>
+        </button>
+        <div id="settings-pop" class="menu-panel settings-pop" hidden>
+          <h2>Medidas generales</h2>
+          <form id="settings" class="settings" onsubmit="return false"></form>
+        </div>
+      </div>
+      <span class="sep" aria-hidden="true"></span>
+      <button id="btn-reset" class="icon-btn" title="Empezar de cero" aria-label="Empezar de cero"><i class="ph ph-file-plus"></i></button>
+      <div class="menu">
+        <button id="btn-open" class="icon-btn wide" data-menu="open-menu" title="Abrir diseño o ejemplo" aria-label="Abrir" aria-haspopup="menu" aria-expanded="false">
+          <i class="ph ph-folder-open"></i><i class="ph ph-caret-down caret"></i>
+        </button>
+        <div id="open-menu" class="menu-panel menu-list" role="menu" hidden>
+          <button id="btn-open-file" role="menuitem"><i class="ph ph-upload-simple"></i>Abrir archivo .json…</button>
+          <div class="menu-label">Ejemplos</div>
+          <div id="example-list"></div>
+        </div>
+      </div>
+      <button id="btn-save" class="icon-btn" title="Guardar diseño (.json)" aria-label="Guardar diseño"><i class="ph ph-floppy-disk"></i></button>
+      <button id="btn-undo" class="icon-btn" title="Deshacer (⌘Z)" aria-label="Deshacer"><i class="ph ph-arrow-counter-clockwise"></i></button>
+      <input id="file-open" type="file" accept=".json,application/json" hidden>
+      <button id="btn-pdf" class="btn primary"><i class="ph ph-download-simple"></i>Descargar PDF</button>
+    </div>
+  </header>
+
+  <main class="app">
+    <aside class="col palette-col">
+      <section class="panel">
+        <h2>Secciones</h2>
+        <div id="palette" class="tiles"></div>
+      </section>
+    </aside>
+
+    <section class="col builder-col panel">
+      <div class="panel-head">
+        <h2>Constructor</h2>
+      </div>
+      <ol id="stack" class="stack"></ol>
+      <div id="handles" class="handles"></div>
+    </section>
+
+    <section class="col profile-col panel">
+      <div class="panel-head">
+        <h2>Vista lateral</h2>
+        <span id="summary" class="hint"></span>
+      </div>
+      <div id="profile" class="profile"></div>
+      <div id="stats"></div>
+    </section>
+  </main>
+
+  <dialog id="export" class="export" aria-label="Descargar PDF">
+    <div class="export-head">
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="pages" role="tab">Hojas A4</button>
+        <button class="tab" data-tab="pieces" role="tab">Piezas</button>
+      </div>
+      <div class="export-actions">
+        <label class="check"><input type="checkbox" id="opt-fill"> con color</label>
+        <button id="btn-svgs" class="icon-btn" title="Descargar hojas en SVG" aria-label="Descargar hojas en SVG"><i class="ph ph-file-svg"></i></button>
+        <button id="btn-pdf-go" class="btn primary"><i class="ph ph-download-simple"></i>Descargar PDF</button>
+        <button id="btn-close" class="icon-btn" title="Cerrar" aria-label="Cerrar"><i class="ph ph-x"></i></button>
+      </div>
+    </div>
+    <div class="export-body">
+      <div id="pages" class="pages"></div>
+      <div id="pieces" class="pieces" hidden></div>
+    </div>
+  </dialog>
+
+  <script src="js/geometry.js"></script>
+  <script src="js/export.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/builder.js"></script>
+  <script src="js/views.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
